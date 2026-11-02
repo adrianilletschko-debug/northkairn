@@ -139,7 +139,8 @@ export function MapView() {
   useEffect(() => {
     registerSyntheticProtocols();
     const map = new maplibregl.Map({
-      container: el.current!, style: baseStyle(), center: [76.335, 27.47], zoom: 11.2, pitch: 62, bearing: -38, maxPitch: 80,
+      // maxPitch capped at 70: beyond that the sky/horizon band visually cuts through nearby 3D buildings
+      container: el.current!, style: baseStyle(), center: [76.335, 27.47], zoom: 11.2, pitch: 62, bearing: -38, maxPitch: 70,
       attributionControl: false, canvasContextAttributes: { antialias: true }, fadeDuration: 150,
     } as any);
     mapHandle.map = map;
