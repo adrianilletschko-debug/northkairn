@@ -100,6 +100,9 @@ async function mergeExternalStyle(map: maplibregl.Map, url: string): Promise<Ext
   }
   const layerIds: string[] = [];
   for (const layer of style.layers ?? []) {
+    // skip the basemap's own 3D buildings: real-world extrusions clash with our terrain/sky/pitch
+    // and with the digital-twin layers, which are the 3D content this app actually shows
+    if (layer.type === 'fill-extrusion') continue;
     const nid = EXT_PREFIX + layer.id;
     layerIds.push(nid);
     if (map.getLayer(nid)) continue;
