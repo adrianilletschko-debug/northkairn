@@ -66,6 +66,7 @@ interface State {
   reloadLayer(id: string): void;
   replaceLayer(id: string, file: File): Promise<void>;
   patchLayer(id: string, patch: Partial<Pick<GeoLayer, 'visible' | 'opacity' | 'color'>>): void;
+  setAllLayersVisible(visible: boolean): void;
   select(sel: Selection | null, fly?: boolean): void;
   setFilters(patch: Partial<Filters>): void;
   clearFilters(): void;
@@ -214,6 +215,7 @@ export const useStore = create<State>((set, get) => ({
   },
 
   patchLayer(id, patch) { set((s) => ({ layers: s.layers.map((l) => (l.id === id ? { ...l, ...patch } : l)) })); },
+  setAllLayersVisible(visible) { set((s) => ({ layers: s.layers.map((l) => ({ ...l, visible })) })); },
 
   select(selection, fly = false) {
     set({ selection });

@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronLeft, Info, Layers, LocateFixed, Plus, Trash2, TriangleAlert } from 'lucide-react';
+import { ChevronDown, ChevronLeft, Eye, EyeOff, Info, Layers, LocateFixed, Plus, Trash2, TriangleAlert } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { KIND_LABELS } from '../geo/classify';
 import type { GeoLayer } from '../geo/types';
@@ -14,10 +14,12 @@ export function LayerPanel() {
   const layers = useStore((s) => s.layers);
   const open = useStore((s) => s.layerPanelOpen); const setOpen = useStore((s) => s.setLayerPanelOpen);
   const view = useStore((s) => s.view); const setView = useStore((s) => s.setView); const setHeatmap = useStore((s) => s.setHeatmap);
+  const setAllLayersVisible = useStore((s) => s.setAllLayersVisible);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [tab, setTab] = useState<'layers' | 'overlays'>('layers');
   const file = useRef<HTMLInputElement>(null);
   const ordered = [...layers].reverse();
+  const allVisible = layers.length > 0 && layers.every((l) => l.visible);
 
   if (!open) return (
     <button onClick={() => setOpen(true)} className="nk-glass flex items-center gap-2 rounded-xl px-3 py-2 text-[12.5px] text-slate-200 hover:text-white" aria-label="Show layers">
@@ -30,6 +32,11 @@ export function LayerPanel() {
       <div className="flex items-center justify-between px-4 pb-2 pt-3">
         <Segmented size="sm" value={tab} onChange={setTab} options={[{ value: 'layers', label: `Layers · ${layers.length}` }, { value: 'overlays', label: 'Overlays' }]} />
         <div className="flex gap-0.5">
+          {tab === 'layers' && layers.length > 0 && (
+            <Button size="iconSm" variant="ghost" aria-label={allVisible ? 'Hide all layers' : 'Show all layers'} title={allVisible ? 'Hide all layers' : 'Show all layers'} onClick={() => setAllLayersVisible(!allVisible)}>
+              {allVisible ? <Eye /> : <EyeOff />}
+            </Button>
+          )}
           <Button size="iconSm" variant="ghost" aria-label="Upload GeoJSON layer" title="Upload GeoJSON" onClick={() => file.current?.click()}><Plus /></Button>
           <Button size="iconSm" variant="ghost" aria-label="Collapse layer panel" title="Collapse" onClick={() => setOpen(false)}><ChevronLeft /></Button>
         </div>
