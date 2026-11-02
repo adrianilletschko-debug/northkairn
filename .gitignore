@@ -9,6 +9,7 @@ dist
 .vscode/*
 !.vscode/extensions.json
 .idea
+.claude/
 
 # env / secrets
 .env
