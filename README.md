@@ -25,6 +25,14 @@ SINGLE=1 npm run build # one self-contained dist/index.html
 npm run demo:generate  # regenerate the synthetic demo GeoJSON (deterministic)
 ```
 
+## Deployment & access
+
+Netlify builds and publishes `dist/` on every push to `main` (see `netlify.toml`). The deployed site is
+gated by a passcode (`netlify/edge-functions/gate.ts`): nothing — not the HTML, not the JS bundle — is
+served until a visitor enters the code. Set it once in Netlify → Site configuration → Environment
+variables → `SITE_PASSWORD`; the password is never stored in this repo. Leaving it unset disables the
+gate (the site behaves as before).
+
 ## What it does
 
 | Area | Implementation |
