@@ -1,0 +1,20 @@
+node_modules
+dist
+.tmp
+
+# OS
+.DS_Store
+
+# editors
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# env / secrets
+.env
+.env.local
+.env.*.local
+
+# logs
+*.log
+npm-debug.log*
