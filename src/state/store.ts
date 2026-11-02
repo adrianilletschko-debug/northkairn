@@ -102,7 +102,7 @@ export const useStore = create<State>((set, get) => ({
   selection: null,
   filters: EMPTY_FILTERS,
   view: {
-    dimension: '3d', basemap: 'dark', roadStyle: 'condition', heatmaps: { traffic: false, accidents: false, defects: false, flood: false },
+    dimension: '3d', basemap: 'street', roadStyle: 'condition', heatmaps: { traffic: false, accidents: false, defects: false, flood: false },
     vehicles: true, callouts: true, kmLabels: true, terrainExaggeration: 1.6, vehicleSpeed: 1, clusterThreshold: 400, customTileUrl: '', streetStyleUrl: DEFAULT_STREET_STYLE_URL, extrude: true,
   },
   tool: 'none',
