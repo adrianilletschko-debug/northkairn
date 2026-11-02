@@ -142,14 +142,12 @@ export function MapView() {
   useEffect(() => {
     registerSyntheticProtocols();
     const map = new maplibregl.Map({
-      // maxPitch capped at 70: beyond that the sky/horizon band visually cuts through nearby 3D buildings
       container: el.current!, style: baseStyle(), center: [76.335, 27.47], zoom: 11.2, pitch: 62, bearing: -38, maxPitch: 70,
       attributionControl: false, canvasContextAttributes: { antialias: true }, fadeDuration: 150,
     } as any);
     mapHandle.map = map;
     map.on('load', () => {
       addOverlays(map);
-      map.setSky({ 'sky-color': '#081428', 'horizon-color': '#173257', 'fog-color': '#060b16', 'fog-ground-blend': 0.35, 'horizon-fog-blend': 0.6, 'sky-horizon-blend': 0.7, 'atmosphere-blend': 0.6 } as any);
       map.setLight({ anchor: 'viewport', color: '#e0f2fe', intensity: 0.32, position: [1.4, 210, 35] } as any);
       setReady(true);
     });
