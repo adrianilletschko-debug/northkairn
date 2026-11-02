@@ -22,6 +22,7 @@ npm install
 npm run dev            # http://localhost:5173
 npm run build          # production build (dist/)
 SINGLE=1 npm run build # one self-contained dist/index.html
+npm test                # vitest — decision-engine unit tests
 npm run demo:generate  # regenerate the synthetic demo GeoJSON (deterministic)
 ```
 
@@ -46,6 +47,7 @@ gate (the site behaves as before).
 | **Asset panel** | Shows every GeoJSON property. Key fields (ID, type, location, condition, last inspection, maintenance status, risk) display **"Not available"** when absent. It also includes coordinates, length/area, chainage, district, images, inspection history, sensor readings, related maintenance and alerts. |
 | **Analytics** | Asset health, traffic flow (time series from `observations`), road condition, incidents, maintenance forecast, alerts and field devices. **All panels are computed from the loaded features after filters.** If the needed attributes are missing, the panel shows an empty state. |
 | **Advanced** | Heatmaps (traffic density, accidents, defects, flood risk), pulsing risk indicators and callouts, a distance-measurement tool, corridor analysis (Km range plus buffer, via inputs or by picking on the map), animated traffic, and a copyable Markdown report and CSV. |
+| **Prioritization & Budget** | Splits the alignment into 1 km segments, scores a deterioration curve and 4 standard interventions, and greedily ranks segments by benefit per rupee within a ₹ Crore budget and 1-5 year planning period — see the dedicated section below. |
 | **Search & filters** | Debounced global search across asset IDs, names, segments, bridges, incidents, `Km 168.4` / `168+400` chainages and `lat, lng` coordinates. Filters cover category, condition, risk, maintenance status, Km range and district, and they update the map and every panel together. |
 
 ### Recognised attributes (any casing)
@@ -64,12 +66,25 @@ src/
   geo/        types, validate, classify (attribute normalisation), ingest, alignment (chainage index), filters
   data/       repository.ts (InMemory + HttpDatasetRepository for a future PostGIS API), demo.ts, sensorFeed.ts
   analytics/  compute.ts — pure statistics from features
+  decision/   Prioritization & Budget engine (segments, deterioration, interventions, optimise, scenarios) — pure TypeScript, vitest unit tests
   map/        MapView, layerSpecs (style builder), overlays, vehicles, terrainCore + terrain.worker (synthetic basemap)
-  state/      Zustand store (layers, filters, view, tools, selection, history)
+  state/      Zustand store (layers, filters, view, tools, selection, history, prioritization config)
   components/ shell, panels (Recharts), asset panel, layer panel, search, filters, ui/ (shadcn-style primitives)
-  sections/   Assets, Traffic, Roads, Maintenance, Incidents, Analytics & Reports, Data Management, Settings
+  sections/   Assets, Traffic, Roads, Maintenance, Prioritization, Incidents, Analytics & Reports, Data Management, Settings
 scripts/generate-demo.ts  — deterministic synthetic corridor generator
 ```
+
+### Prioritization & Budget
+
+Answers "which sections should we fix first with budget X, and what happens in 5 years if we do or don't": `src/decision/` is a pure-TypeScript engine, independent of React.
+
+- **Segments** (`segments.ts`) — the alignment is split into ~1 km segments; each one's condition, traffic and risk are the mean (or worst, for risk/maintenance) of the features inside it.
+- **Deterioration** (`deterioration.ts`) — condition drops every year, faster under heavier traffic and faster still the worse the road already is. Rates are assumptions, in `config.ts`.
+- **Interventions** (`interventions.ts`) — 4 standard treatments (routine maintenance, preventive preservation, overlay/resurfacing, reconstruction), each with a cost (₹ Lakh/km), a condition gain and a service life. Defaults live in `config.ts` and are **editable per session in Settings → Prioritization**.
+- **Optimise** (`optimise.ts`) — for a given budget (₹ Crore) and planning period (1-5 years), picks the best-value intervention per segment and greedily funds segments in benefit-per-rupee order until the budget runs out. The weighting sliders (condition / traffic / safety / risk) change which factor dominates the benefit score.
+- **Scenarios** (`scenarios.ts`) — compares several fixed budgets (including "do nothing" at ₹0 Cr) over 5 years of simulated deterioration, for the chart in the Prioritization section.
+
+The ranking, the "network condition over 5 years" chart and the map's optional **Priority** layer (Layers → Overlays) all read the same engine. With demo data the costs, gains and resulting ranking are illustrative, not a real pavement management recommendation — the Prioritization section says so.
 
 **Backend readiness.** Components talk to a `DatasetRepository` interface. `HttpDatasetRepository`
 documents the REST contract for a PostgreSQL/PostGIS service (`ST_AsGeoJSON`, viewport `bbox`

@@ -1,10 +1,12 @@
 import maplibregl from 'maplibre-gl';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { rankSegments } from '../decision/optimise';
+import { buildSegments } from '../decision/segments';
 import { mapFilterExpression, featurePasses } from '../geo/filters';
 import { flattenGeometry, representativePoint } from '../geo/ingest';
 import { getFeature, useStore } from '../state/store';
 import { buildSublayers, sourceId } from './layerSpecs';
-import { corridorFC, heatmapData, measureFC, riskFC, riskItems } from './overlays';
+import { corridorFC, heatmapData, measureFC, priorityFC, riskFC, riskItems } from './overlays';
 import { registerSyntheticProtocols, syntheticBounds } from './terrain';
 import { VehicleSim } from './vehicles';
 
@@ -41,7 +43,7 @@ function baseStyle(): any {
   };
 }
 
-const OVERLAY_SOURCES = ['nk-kmlabels', 'nk-heat-traffic', 'nk-heat-accidents', 'nk-heat-defects', 'nk-heat-flood', 'nk-corridor', 'nk-vehicles', 'nk-risk', 'nk-sel', 'nk-hover', 'nk-measure'];
+const OVERLAY_SOURCES = ['nk-kmlabels', 'nk-heat-traffic', 'nk-heat-accidents', 'nk-heat-defects', 'nk-heat-flood', 'nk-priority', 'nk-corridor', 'nk-vehicles', 'nk-risk', 'nk-sel', 'nk-hover', 'nk-measure'];
 const HEAT_RAMPS: Record<string, any[]> = {
   traffic: ['interpolate', ['linear'], ['heatmap-density'], 0, 'rgba(0,0,0,0)', 0.2, 'rgba(34,197,94,0.55)', 0.45, 'rgba(250,204,21,0.75)', 0.7, 'rgba(249,115,22,0.85)', 1, 'rgba(239,68,68,0.95)'],
   accidents: ['interpolate', ['linear'], ['heatmap-density'], 0, 'rgba(0,0,0,0)', 0.2, 'rgba(127,29,29,0.5)', 0.5, 'rgba(220,38,38,0.8)', 1, 'rgba(254,202,202,1)'],
@@ -57,6 +59,9 @@ function addOverlays(map: maplibregl.Map) {
       'heatmap-radius': ['interpolate', ['exponential', 2], ['zoom'], 8, k === 'flood' ? 10 : 14, 12, k === 'flood' ? 28 : 34, 15, 70], 'heatmap-color': HEAT_RAMPS[k] as any, 'heatmap-opacity': 0.8,
     } });
   }
+  const rankWidth = (a: number, b: number) => ['interpolate', ['linear'], ['get', 'rank'], 1, a, 10, (a + b) / 2, 60, b];
+  map.addLayer({ id: 'nk-priority-glow', type: 'line', source: 'nk-priority', paint: { 'line-color': ['case', ['get', 'top'], '#ef4444', '#38bdf8'], 'line-width': rankWidth(16, 6) as any, 'line-blur': 6, 'line-opacity': ['case', ['get', 'top'], 0.45, 0.15] } });
+  map.addLayer({ id: 'nk-priority-line', type: 'line', source: 'nk-priority', paint: { 'line-color': ['interpolate', ['linear'], ['get', 'rank'], 1, '#ef4444', 10, '#f59e0b', 30, '#38bdf8', 60, '#475569'], 'line-width': rankWidth(7, 2.5) as any, 'line-opacity': ['case', ['get', 'top'], 0.95, 0.5] } });
   map.addLayer({ id: 'nk-corridor-fill', type: 'fill', source: 'nk-corridor', filter: ['==', ['get', 'part'], 'buffer'], paint: { 'fill-color': '#a78bfa', 'fill-opacity': 0.14 } });
   map.addLayer({ id: 'nk-corridor-line', type: 'line', source: 'nk-corridor', filter: ['==', ['get', 'part'], 'buffer'], paint: { 'line-color': '#c4b5fd', 'line-width': 1.6, 'line-dasharray': [3, 2] } });
   map.addLayer({ id: 'nk-corridor-axis', type: 'line', source: 'nk-corridor', filter: ['==', ['get', 'part'], 'axis'], paint: { 'line-color': '#c4b5fd', 'line-width': 3, 'line-opacity': 0.8, 'line-blur': 1 } });
@@ -130,6 +135,7 @@ export function MapView() {
   const measure = useStore((s) => s.measure);
   const fly = useStore((s) => s.fly);
   const alignment = useStore((s) => s.alignment);
+  const priority = useStore((s) => s.priority);
   const dataVersion = useStore((s) => s.dataVersion);
   const layerPanelOpen = useStore((s) => s.layerPanelOpen);
   const managed = useRef(new Map<string, Managed>());
@@ -290,6 +296,11 @@ export function MapView() {
   // ---------- measure & corridor ----------
   useEffect(() => { const map = mapHandle.map; if (!map || !ready) return; (map.getSource('nk-measure') as maplibregl.GeoJSONSource).setData(measureFC(tool === 'measure' || measure.done ? measure.points : []) as any); }, [ready, measure, tool]);
   useEffect(() => { const map = mapHandle.map; if (!map || !ready) return; (map.getSource('nk-corridor') as maplibregl.GeoJSONSource).setData((corridor ? corridorFC(alignment, corridor.a, corridor.b, corridor.bufferM) : EMPTY) as any); }, [ready, corridor, alignment]);
+
+  // ---------- prioritization & budget overlay ----------
+  const prioritySegments = useMemo(() => (priority.showLayer ? buildSegments(layers, alignment, filters) : []), [priority.showLayer, layers, alignment, filters]);
+  const priorityRanked = useMemo(() => (priority.showLayer ? rankSegments(prioritySegments, priority.interventions, priority.budgetCr, priority.years, priority.weights).ranked : []), [priority.showLayer, prioritySegments, priority.interventions, priority.budgetCr, priority.years, priority.weights]);
+  useEffect(() => { const map = mapHandle.map; if (!map || !ready) return; (map.getSource('nk-priority') as maplibregl.GeoJSONSource).setData((priority.showLayer ? priorityFC(alignment, priorityRanked) : EMPTY) as any); }, [ready, priority.showLayer, priorityRanked, alignment]);
   useEffect(() => {
     const map = mapHandle.map; if (!map) return;
     if (tool !== 'none') { map.doubleClickZoom.disable(); map.getCanvas().style.cursor = 'crosshair'; } else { map.doubleClickZoom.enable(); map.getCanvas().style.cursor = ''; }

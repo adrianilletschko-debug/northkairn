@@ -15,6 +15,7 @@ export function LayerPanel() {
   const open = useStore((s) => s.layerPanelOpen); const setOpen = useStore((s) => s.setLayerPanelOpen);
   const view = useStore((s) => s.view); const setView = useStore((s) => s.setView); const setHeatmap = useStore((s) => s.setHeatmap);
   const setAllLayersVisible = useStore((s) => s.setAllLayersVisible);
+  const priority = useStore((s) => s.priority); const setPriorityShowLayer = useStore((s) => s.setPriorityShowLayer);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [tab, setTab] = useState<'layers' | 'overlays'>('layers');
   const file = useRef<HTMLInputElement>(null);
@@ -59,6 +60,11 @@ export function LayerPanel() {
             {([['traffic', 'Traffic density', '#f97316'], ['accidents', 'Accident concentration', '#ef4444'], ['defects', 'Road defects', '#fb923c'], ['flood', 'Flood risk', '#8b5cf6']] as const).map(([k, label, c]) => (
               <Row key={k} label={label}><Switch color={c} checked={view.heatmaps[k]} onCheckedChange={(v) => setHeatmap(k, v)} label={label} /></Row>
             ))}
+          </div>
+          <div>
+            <div className="mb-1.5 text-[10.5px] font-medium uppercase tracking-wider text-slate-500">Prioritization</div>
+            <Row label="Priority ranking"><Switch color="#ef4444" checked={priority.showLayer} onCheckedChange={setPriorityShowLayer} label="Priority ranking" /></Row>
+            {priority.showLayer && <div className="pb-1.5 text-[10.5px] leading-relaxed text-slate-500">Top-10 segments in red/orange, rest in blue/grey. Set the budget and weighting in Prioritization.</div>}
           </div>
           <div>
             <div className="mb-1.5 text-[10.5px] font-medium uppercase tracking-wider text-slate-500">Live view</div>

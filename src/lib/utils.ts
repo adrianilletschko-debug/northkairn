@@ -29,3 +29,13 @@ export const humanKey = (k: string) => k.replace(/_/g, ' ').replace(/\b(km|id|km
 export function copyText(text: string) {
   return navigator.clipboard.writeText(text).then(() => true, () => false);
 }
+
+export function downloadText(filename: string, text: string, mime = 'text/plain') {
+  try {
+    const blob = new Blob([text], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return true;
+  } catch { return false; }
+}

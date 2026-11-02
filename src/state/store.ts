@@ -2,11 +2,12 @@ import type { Position } from 'geojson';
 import { create } from 'zustand';
 import { DEMO_SETS, type DemoSetId } from '../data/demo';
 import { repository } from '../data/repository';
+import { DEFAULT_INTERVENTIONS, DEFAULT_PRIORITY_WEIGHTS, DEFAULT_SCENARIO_BUDGETS_CR, type Intervention, type PriorityWeights } from '../decision/config';
 import { buildAlignment, enrichLayers, type Alignment } from '../geo/alignment';
 import { ingestGeoJSONText, newLayerId } from '../geo/ingest';
 import { EMPTY_FILTERS, type Filters, type GeoLayer, type ImportRecord, type LayerKind, type Selection } from '../geo/types';
 
-export type Section = 'overview' | 'twin' | 'assets' | 'traffic' | 'roads' | 'maintenance' | 'incidents' | 'analytics' | 'data' | 'settings';
+export type Section = 'overview' | 'twin' | 'assets' | 'traffic' | 'roads' | 'maintenance' | 'priority' | 'incidents' | 'analytics' | 'data' | 'settings';
 export type RoadStyle = 'default' | 'condition' | 'traffic';
 export type Basemap = 'dark' | 'satellite' | 'street' | 'custom';
 export type Tool = 'none' | 'measure' | 'corridor';
@@ -33,6 +34,19 @@ export interface CorridorSelection { a: number; b: number; bufferM: number }
 export interface FlyRequest { bbox?: [number, number, number, number]; center?: Position; zoom?: number; ts: number; pitch?: number }
 export interface Toast { id: number; kind: 'info' | 'success' | 'error' | 'warning'; text: string }
 
+export interface PriorityConfig {
+  budgetCr: number;
+  years: number;
+  weights: PriorityWeights;
+  interventions: Intervention[];
+  scenarioBudgetsCr: number[];
+  showLayer: boolean;
+}
+export const DEFAULT_PRIORITY_CONFIG: PriorityConfig = {
+  budgetCr: 25, years: 5, weights: DEFAULT_PRIORITY_WEIGHTS, interventions: DEFAULT_INTERVENTIONS,
+  scenarioBudgetsCr: DEFAULT_SCENARIO_BUDGETS_CR, showLayer: false,
+};
+
 /** draw order (bottom → top) by kind */
 export const KIND_Z: LayerKind[] = ['landuse', 'boundary', 'flood', 'water', 'maintenance', 'drainage', 'highway', 'road', 'building', 'bridge', 'lighting', 'marker', 'sensor', 'camera', 'defect', 'incident', 'generic'];
 const sortLayers = (ls: GeoLayer[]) => [...ls].sort((a, b) => KIND_Z.indexOf(a.kind) - KIND_Z.indexOf(b.kind) || a.order - b.order);
@@ -54,6 +68,7 @@ interface State {
   dataVersion: number;
   layerPanelOpen: boolean;
   filterPanelOpen: boolean;
+  priority: PriorityConfig;
 
   setSection(s: Section): void;
   importText(text: string, fileName: string, opts?: { source?: 'demo' | 'upload'; kind?: LayerKind; visible?: boolean; replaceId?: string; silent?: boolean }): { ok: boolean; error?: string; layer?: GeoLayer };
@@ -81,6 +96,12 @@ interface State {
   dismissToast(id: number): void;
   setLayerPanelOpen(v: boolean): void;
   setFilterPanelOpen(v: boolean): void;
+  setPriorityBudget(budgetCr: number): void;
+  setPriorityYears(years: number): void;
+  setPriorityWeights(patch: Partial<PriorityWeights>): void;
+  setPriorityInterventions(interventions: Intervention[]): void;
+  resetPriorityInterventions(): void;
+  setPriorityShowLayer(v: boolean): void;
 }
 
 let toastSeq = 1;
@@ -115,6 +136,7 @@ export const useStore = create<State>((set, get) => ({
   dataVersion: 0,
   layerPanelOpen: true,
   filterPanelOpen: false,
+  priority: DEFAULT_PRIORITY_CONFIG,
 
   setSection(section) {
     const roadStyle: Partial<ViewSettings> = section === 'traffic' ? { roadStyle: 'traffic' } : section === 'roads' ? { roadStyle: 'condition' } : {};
@@ -241,6 +263,13 @@ export const useStore = create<State>((set, get) => ({
   dismissToast(id) { set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })); },
   setLayerPanelOpen(layerPanelOpen) { set({ layerPanelOpen }); },
   setFilterPanelOpen(filterPanelOpen) { set({ filterPanelOpen }); },
+
+  setPriorityBudget(budgetCr) { set((s) => ({ priority: { ...s.priority, budgetCr: Math.max(0, budgetCr) } })); },
+  setPriorityYears(years) { set((s) => ({ priority: { ...s.priority, years: Math.max(1, Math.min(5, Math.round(years))) } })); },
+  setPriorityWeights(patch) { set((s) => ({ priority: { ...s.priority, weights: { ...s.priority.weights, ...patch } } })); },
+  setPriorityInterventions(interventions) { set((s) => ({ priority: { ...s.priority, interventions } })); },
+  resetPriorityInterventions() { set((s) => ({ priority: { ...s.priority, interventions: DEFAULT_INTERVENTIONS } })); },
+  setPriorityShowLayer(v) { set((s) => ({ priority: { ...s.priority, showLayer: v } })); },
 }));
 
 /** Look up a feature by selection. */

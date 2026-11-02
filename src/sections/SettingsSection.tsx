@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { DEFAULT_INTERVENTIONS, type Intervention } from '../decision/config';
 import { DEFAULT_STREET_STYLE_URL, useStore } from '../state/store';
 import { Button } from '../components/ui/button';
 import { Panel, PanelHeader, Segmented } from '../components/ui/misc';
@@ -68,6 +69,11 @@ export function SettingsSection() {
           </div>
         </Panel>
         <Panel>
+          <PanelHeader title="Prioritization" sub="Default assumptions for the Prioritization & Budget module (per km)"
+            right={<Button size="sm" variant="ghost" onClick={() => useStore.getState().resetPriorityInterventions()}>Reset to defaults</Button>} />
+          <InterventionsTable />
+        </Panel>
+        <Panel>
           <PanelHeader title="About this deployment" />
           <div className="space-y-2 px-4 pb-4 pt-2 text-[12px] leading-relaxed text-slate-400">
             <p><span className="text-slate-200">Data:</span> every map feature and statistic comes from the GeoJSON layers listed in Data Management. The demonstration corridor is fictional and synthetic; it does not represent real government infrastructure.</p>
@@ -77,5 +83,30 @@ export function SettingsSection() {
         </Panel>
       </div>
     </SectionShell>
+  );
+}
+
+function InterventionsTable() {
+  const interventions = useStore((s) => s.priority.interventions); const setInterventions = useStore((s) => s.setPriorityInterventions);
+  const patch = (id: string, field: keyof Intervention, value: number) => setInterventions(interventions.map((iv) => (iv.id === id ? { ...iv, [field]: Math.max(0, value) } : iv)));
+  const cell = (id: string, field: keyof Intervention, value: number) => (
+    <input type="number" min={0} value={value} onChange={(e) => patch(id, field, Number(e.target.value))}
+      className="h-7 w-20 rounded-md border border-white/10 bg-white/[0.03] px-1.5 text-right text-[11.5px] tabular-nums text-slate-100 focus:border-cyan-400/50 focus:outline-none" />
+  );
+  return (
+    <div className="px-4 pb-4 pt-1">
+      <table className="w-full text-[11.5px]">
+        <thead><tr className="text-left text-slate-500"><th className="pb-1.5 font-normal">Intervention</th><th className="pb-1.5 text-right font-normal">₹ Lakh / km</th><th className="pb-1.5 text-right font-normal">Condition gain</th><th className="pb-1.5 text-right font-normal">Life (yr)</th></tr></thead>
+        <tbody>{interventions.map((iv) => (
+          <tr key={iv.id} className="border-t border-white/[0.05]">
+            <td className="py-1.5 pr-2 text-slate-300">{iv.name}</td>
+            <td className="py-1.5 text-right">{cell(iv.id, 'costPerKmLakh', iv.costPerKmLakh)}</td>
+            <td className="py-1.5 text-right">{cell(iv.id, 'conditionImprovement', iv.conditionImprovement)}</td>
+            <td className="py-1.5 text-right">{cell(iv.id, 'lifeYears', iv.lifeYears)}</td>
+          </tr>
+        ))}</tbody>
+      </table>
+      <div className="mt-2 text-[10.5px] leading-relaxed text-slate-500">Assumptions, not published cost schedules. Defaults: {DEFAULT_INTERVENTIONS.map((iv) => `${iv.name} ₹${iv.costPerKmLakh}L/km`).join(', ')}.</div>
+    </div>
   );
 }

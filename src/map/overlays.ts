@@ -4,6 +4,7 @@
  */
 import { booleanPointInPolygon } from '@turf/turf';
 import type { Feature, FeatureCollection, Point, Position } from 'geojson';
+import type { Candidate } from '../decision/optimise';
 import type { Alignment } from '../geo/alignment';
 import { isSubPart } from '../geo/classify';
 import { featurePasses } from '../geo/filters';
@@ -84,6 +85,15 @@ export function corridorFC(al: Alignment | null, a: number, b: number, bufferM: 
     { type: 'Feature', geometry: { type: 'LineString', coordinates: al.slice(a, b) }, properties: { part: 'axis' } },
     pt(al.pointAt(a), { part: 'end', label: 'A' }), pt(al.pointAt(b), { part: 'end', label: 'B' }),
   ]);
+}
+
+/** One LineString per ranked segment (1 km each), tagged with its rank so the paint expression can colour rank 1-10 vividly and the rest more faintly. */
+export function priorityFC(al: Alignment | null, ranked: Candidate[]) {
+  if (!al || !ranked.length) return fc([]);
+  return fc(ranked.map((c, i) => ({
+    type: 'Feature', geometry: { type: 'LineString', coordinates: al.slice(c.segment.kmA, c.segment.kmB) },
+    properties: { rank: i + 1, top: i < 10, label: `Rank ${i + 1} · ${c.intervention.name}` },
+  } as Feature)));
 }
 
 export function lengthM(points: Position[]) {

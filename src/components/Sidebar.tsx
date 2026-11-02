@@ -1,4 +1,4 @@
-import { Activity, Boxes, Car, ChartSpline, Database, LayoutDashboard, Landmark, Route, Settings, TriangleAlert, Wrench } from 'lucide-react';
+import { Activity, Boxes, Car, ChartSpline, Database, LayoutDashboard, Landmark, ListOrdered, Route, Settings, TriangleAlert, Wrench } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useStore, type Section } from '../state/store';
 import { Logo } from './Logo';
@@ -10,6 +10,7 @@ export const NAV: { id: Section; label: string; icon: any }[] = [
   { id: 'traffic', label: 'Traffic Monitoring', icon: Car },
   { id: 'roads', label: 'Road Conditions', icon: Route },
   { id: 'maintenance', label: 'Maintenance', icon: Wrench },
+  { id: 'priority', label: 'Prioritization', icon: ListOrdered },
   { id: 'incidents', label: 'Incidents', icon: TriangleAlert },
   { id: 'analytics', label: 'Analytics & Reports', icon: ChartSpline },
   { id: 'data', label: 'Data Management', icon: Database },

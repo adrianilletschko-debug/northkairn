@@ -13,12 +13,13 @@ import { AssetsSection } from './sections/AssetsSection';
 import { DataSection } from './sections/DataSection';
 import { IncidentsSection } from './sections/IncidentsSection';
 import { MaintenanceSection } from './sections/MaintenanceSection';
+import { PrioritizationSection } from './sections/PrioritizationSection';
 import { RoadsSection } from './sections/RoadsSection';
 import { SettingsSection } from './sections/SettingsSection';
 import { TrafficSection } from './sections/TrafficSection';
 import { useStore, type Section } from './state/store';
 
-const SECTION_HASH: Section[] = ['overview', 'twin', 'assets', 'traffic', 'roads', 'maintenance', 'incidents', 'analytics', 'data', 'settings'];
+const SECTION_HASH: Section[] = ['overview', 'twin', 'assets', 'traffic', 'roads', 'maintenance', 'priority', 'incidents', 'analytics', 'data', 'settings'];
 
 export function App() {
   const section = useStore((s) => s.section);
@@ -38,6 +39,7 @@ export function App() {
     traffic: { w: 'w-[420px]', node: <TrafficSection /> },
     roads: { w: 'w-[440px]', node: <RoadsSection /> },
     maintenance: { w: 'w-[480px]', node: <MaintenanceSection /> },
+    priority: { w: 'w-[520px]', node: <PrioritizationSection /> },
     incidents: { w: 'w-[440px]', node: <IncidentsSection /> },
     analytics: { w: 'w-[480px]', node: <AnalyticsSection /> },
     data: { w: 'w-[560px]', node: <DataSection /> },
